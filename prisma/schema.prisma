@@ -1,0 +1,255 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  EMPLOYEE
+  SUPERADMIN
+}
+
+/** Estado de la suscripción del negocio a la plataforma. */
+enum SubscriptionStatus {
+  PRUEBA
+  ACTIVA
+  VENCIDA
+  SUSPENDIDA
+  CANCELADA
+}
+
+/** Planes por tamaño de negocio. */
+enum PlanId {
+  BASICO
+  SALON
+  PREMIUM
+}
+
+/** Cómo pagó el negocio su suscripción. */
+enum BillingMethod {
+  NEQUI
+  TRANSFERENCIA
+  EFECTIVO
+  WOMPI
+  OTRO
+}
+
+enum AppointmentStatus {
+  PENDIENTE
+  CONFIRMADA
+  COMPLETADA
+  CANCELADA
+  NO_ASISTIO
+}
+
+enum PaymentMethod {
+  EFECTIVO
+  TARJETA
+  TRANSFERENCIA
+}
+
+enum SaleItemType {
+  SERVICE
+  PRODUCT
+}
+
+model Business {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  phone     String?
+  address   String?
+  openHour  String   @default("08:00")
+  closeHour String   @default("19:00")
+  currency  String   @default("COP")
+  createdAt DateTime @default(now())
+
+  themeName       String  @default("violeta")
+  customPrimary   String?
+  customSecondary String?
+  logoUrl         String?
+
+  // Suscripción a la plataforma
+  planId             PlanId             @default(BASICO)
+  subscriptionStatus SubscriptionStatus @default(PRUEBA)
+  paidUntil          DateTime?
+  /// Precio mensual acordado con este negocio. Si es null se usa el del plan.
+  monthlyPrice       Float?
+
+  users        User[]
+  payments     BillingPayment[]
+  staff        Staff[]
+  services     Service[]
+  clients      Client[]
+  appointments Appointment[]
+  products     Product[]
+  sales        Sale[]
+}
+
+/**
+ * Pago de un negocio por su suscripción a la plataforma.
+ * Hoy se registra a mano; cuando se conecte Wompi, el webhook creará
+ * estos mismos registros con method = WOMPI y su referencia.
+ */
+model BillingPayment {
+  id          String        @id @default(cuid())
+  businessId  String
+  amount      Float
+  method      BillingMethod @default(NEQUI)
+  /// Referencia de la transacción (nº de Nequi, id de Wompi, etc.)
+  reference   String?
+  periodStart DateTime
+  periodEnd   DateTime
+  note        String?
+  createdAt   DateTime      @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([createdAt])
+}
+
+model User {
+  id           String   @id @default(cuid())
+  businessId   String
+  staffId      String?  @unique
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(OWNER)
+  createdAt    DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  staff    Staff?   @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+}
+
+model Staff {
+  id         String   @id @default(cuid())
+  businessId String
+  name       String
+  phone      String?
+  colorTag   String   @default("#7c3aed")
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+  sales        Sale[]
+  user         User?
+
+  @@index([businessId])
+}
+
+model Service {
+  id              String   @id @default(cuid())
+  businessId      String
+  name            String
+  category        String?
+  durationMinutes Int      @default(30)
+  price           Float
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+  saleItems    SaleItem[]
+
+  @@index([businessId])
+}
+
+model Client {
+  id         String   @id @default(cuid())
+  businessId String
+  name       String
+  phone      String?
+  email      String?
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+  sales        Sale[]
+
+  @@index([businessId])
+}
+
+model Appointment {
+  id         String            @id @default(cuid())
+  businessId String
+  clientId   String
+  staffId    String
+  serviceId  String
+  startTime  DateTime
+  endTime    DateTime
+  status     AppointmentStatus @default(PENDIENTE)
+  notes      String?
+  createdAt  DateTime          @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  client   Client   @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  staff    Staff    @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  service  Service  @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  sale     Sale?
+
+  @@index([businessId])
+  @@index([staffId, startTime])
+}
+
+model Product {
+  id         String   @id @default(cuid())
+  businessId String
+  name       String
+  price      Float
+  stock      Int      @default(0)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  business  Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  saleItems SaleItem[]
+
+  @@index([businessId])
+}
+
+model Sale {
+  id            String        @id @default(cuid())
+  businessId    String
+  clientId      String?
+  staffId       String?
+  appointmentId String?       @unique
+  total         Float
+  paymentMethod PaymentMethod @default(EFECTIVO)
+  createdAt     DateTime      @default(now())
+
+  business    Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  client      Client?      @relation(fields: [clientId], references: [id])
+  staff       Staff?       @relation(fields: [staffId], references: [id])
+  appointment Appointment? @relation(fields: [appointmentId], references: [id])
+  items       SaleItem[]
+
+  @@index([businessId])
+  @@index([businessId, createdAt])
+}
+
+model SaleItem {
+  id          String       @id @default(cuid())
+  saleId      String
+  type        SaleItemType
+  description String
+  quantity    Int          @default(1)
+  unitPrice   Float
+  subtotal    Float
+  serviceId   String?
+  productId   String?
+
+  sale    Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  service Service? @relation(fields: [serviceId], references: [id])
+  product Product? @relation(fields: [productId], references: [id])
+
+  @@index([saleId])
+}
