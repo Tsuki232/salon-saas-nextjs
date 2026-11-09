@@ -1,0 +1,207 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #f7f6fb;
+  --foreground: #17151f;
+  --surface: rgba(255, 255, 255, 0.72);
+  --surface-strong: rgba(255, 255, 255, 0.88);
+  --surface-border: rgba(23, 21, 31, 0.08);
+  --surface-shadow: rgba(76, 29, 149, 0.08);
+  --muted: #6b6678;
+  --accent-from: #7c3aed;
+  --accent-via: #a855f7;
+  --accent-to: #ec4899;
+  --outline-color: rgba(23, 21, 31, 0.18);
+  --blob-1: #a855f7;
+  --blob-2: #ec4899;
+  --blob-3: #60a5fa;
+}
+
+.dark {
+  --background: #0b0a12;
+  --foreground: #f2f0f7;
+  --surface: rgba(24, 21, 36, 0.6);
+  --surface-strong: rgba(28, 25, 42, 0.8);
+  --surface-border: rgba(255, 255, 255, 0.09);
+  --surface-shadow: rgba(0, 0, 0, 0.4);
+  --muted: #a29cb5;
+  --accent-from: #a855f7;
+  --accent-via: #c084fc;
+  --accent-to: #f472b6;
+  --outline-color: rgba(255, 255, 255, 0.22);
+  --blob-1: #7c3aed;
+  --blob-2: #db2777;
+  --blob-3: #2563eb;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  border-color: var(--surface-border);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  transition: background-color 0.4s ease, color 0.4s ease;
+}
+
+/* Glassmorphism surfaces */
+.glass {
+  background: var(--surface);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid var(--surface-border);
+  box-shadow: 0 8px 32px var(--surface-shadow);
+}
+
+.glass-strong {
+  background: var(--surface-strong);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--surface-border);
+  box-shadow: 0 20px 60px var(--surface-shadow);
+}
+
+/* Decorative gradient blobs */
+.bg-blobs {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.bg-blobs::before,
+.bg-blobs::after,
+.bg-blobs .blob-3 {
+  content: "";
+  position: absolute;
+  width: 42vw;
+  height: 42vw;
+  max-width: 560px;
+  max-height: 560px;
+  border-radius: 9999px;
+  filter: blur(90px);
+  opacity: 0.35;
+  animation: blob-float 22s ease-in-out infinite;
+}
+
+.bg-blobs::before {
+  background: var(--blob-1);
+  top: -10%;
+  left: -10%;
+}
+
+.bg-blobs::after {
+  background: var(--blob-2);
+  bottom: -15%;
+  right: -10%;
+  animation-delay: -7s;
+  animation-duration: 26s;
+}
+
+.bg-blobs .blob-3 {
+  background: var(--blob-3);
+  top: 30%;
+  right: 20%;
+  animation-delay: -14s;
+  animation-duration: 30s;
+  opacity: 0.22;
+}
+
+@keyframes blob-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(6%, -8%) scale(1.12); }
+  66% { transform: translate(-5%, 5%) scale(0.92); }
+}
+
+/* Typography accents */
+.text-gradient {
+  background: linear-gradient(135deg, var(--accent-from), var(--accent-via), var(--accent-to));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-outline {
+  -webkit-text-stroke: 1px var(--outline-color);
+  text-stroke: 1px var(--outline-color);
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.animate-pulse-soft {
+  animation: pulse-soft 2.2s ease-in-out infinite;
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.animate-shimmer {
+  background-size: 200% 100%;
+  animation: shimmer 2.5s linear infinite;
+}
+
+/* Documentos legales */
+.legal-prose h2 {
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+.legal-prose h3 {
+  margin-top: 1.25rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+.legal-prose p,
+.legal-prose li {
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.legal-prose p {
+  margin-bottom: 0.85rem;
+}
+.legal-prose ul,
+.legal-prose ol {
+  margin: 0 0 0.85rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.legal-prose ul { list-style: disc; }
+.legal-prose ol { list-style: decimal; }
+.legal-prose strong { color: var(--foreground); font-weight: 600; }
+.legal-prose a {
+  color: var(--accent-from);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+::selection {
+  background: var(--accent-via);
+  color: white;
+}
